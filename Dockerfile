@@ -15,6 +15,6 @@ USER 1001
 
 RUN uv sync --no-cache --extra test
 
-RUN uv run python -m scripts.generate_managed_pipelines
+RUN uv run python -m scripts.generate_managed_pipelines.generate_managed_pipelines
 
 CMD ["python"]
