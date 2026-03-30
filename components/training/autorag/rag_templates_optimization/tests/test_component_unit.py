@@ -1,5 +1,6 @@
 """Tests for the rag_templates_optimization component."""
 
+import os
 import ssl
 import sys
 import types
@@ -215,6 +216,68 @@ class TestRagTemplatesOptimizationUnitTests:
                     llama_stack_vector_database_id="unsupported_vs",
                     optimization_settings={"metric": "faithfulness", "max_number_of_rag_patterns": 8},
                 )
+
+    def test_max_number_of_rag_patterns_non_numeric_string_raises_value_error(self):
+        """UI may pass string parameters; non-numeric strings are rejected with a clear error."""
+        with mock.patch.dict(sys.modules, _minimal_dependency_modules()):
+            with pytest.raises(ValueError, match="max_number_of_rag_patterns must be a valid integer"):
+                rag_templates_optimization.python_func(
+                    extracted_text="/tmp/extracted",
+                    test_data="/tmp/test_data.json",
+                    search_space_prep_report="/tmp/report.yml",
+                    rag_patterns=mock.MagicMock(path="/tmp/rag_patterns", metadata={}, uri=""),
+                    embedded_artifact=mock.MagicMock(path="/tmp/embedded"),
+                    test_data_key="small-dataset/benchmark.json",
+                    chat_model_url="https://chat",
+                    chat_model_token="token",
+                    embedding_model_url="https://emb",
+                    embedding_model_token="token",
+                    optimization_settings={
+                        "metric": "faithfulness",
+                        "max_number_of_rag_patterns": "not-a-number",
+                    },
+                )
+
+    @mock.patch.dict(
+        os.environ,
+        {
+            "LLAMA_STACK_CLIENT_BASE_URL": "https://llama-stack.example.com",
+            "LLAMA_STACK_CLIENT_API_KEY": "test-api-key",
+        },
+    )
+    def test_max_number_of_rag_patterns_numeric_string_coerced_for_gam_opt(self, tmp_path):
+        """Pipeline UI often sends numbers as strings; they must coerce to int for GAMOptSettings."""
+        mocks = _make_all_mocks()
+        llama_mod = _make_llama_stack_client_module()
+        mock_ls = mock.MagicMock()
+        mock_ls.models.list.return_value = []
+        llama_mod.LlamaStackClient.return_value = mock_ls
+        mocks["llama_stack_client"] = llama_mod
+        mocks["openai"] = _make_openai_module()
+        mocks["ai4rag.core.experiment.experiment"].AI4RAGExperiment.side_effect = _SentinelAbort
+
+        search_space_report = tmp_path / "report.yml"
+        search_space_report.write_text("{}")
+        extracted_text = str(tmp_path / "extracted_text")
+        test_data_path = tmp_path / "test_data.json"
+        test_data_path.write_text("[]")
+        test_data = str(test_data_path)
+        rag_patterns = mock.MagicMock()
+        embedded_artifact = mock.MagicMock()
+
+        with mock.patch.dict(sys.modules, mocks):
+            with pytest.raises(_SentinelAbort):
+                rag_templates_optimization.python_func(
+                    extracted_text=extracted_text,
+                    test_data=test_data,
+                    search_space_prep_report=str(search_space_report),
+                    rag_patterns=rag_patterns,
+                    embedded_artifact=embedded_artifact,
+                    test_data_key="small-dataset/benchmark.json",
+                    optimization_settings={"metric": "faithfulness", "max_number_of_rag_patterns": "8"},
+                )
+
+        mocks["ai4rag.core.hpo.gam_opt"].GAMOptSettings.assert_called_once_with(max_evals=8)
 
 
 class TestSSLFallbackRagTemplatesOptimization:

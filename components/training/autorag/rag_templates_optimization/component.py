@@ -178,8 +178,18 @@ def rag_templates_optimization(
         if not isinstance(optimization_settings, dict):
             raise TypeError("optimization_settings must be a dictionary.")
         max_rag_patterns = optimization_settings.get("max_number_of_rag_patterns", DEFAULT_MAX_NUMBER_OF_RAG_PATTERNS)
+        if isinstance(max_rag_patterns, str):
+            try:
+                max_rag_patterns = int(max_rag_patterns.strip())
+            except ValueError as exc:
+                raise ValueError(
+                    "optimization_settings.max_number_of_rag_patterns must be a valid integer "
+                    f"(e.g. from the pipeline UI); got {max_rag_patterns!r}."
+                ) from exc
         if not isinstance(max_rag_patterns, int):
             raise TypeError("optimization_settings.max_number_of_rag_patterns must be an integer.")
+
+        _ssl_logger.info("max_number_of_rag_patterns %s", max_rag_patterns)
         if not (
             MAX_NUMBER_OF_RAG_PATTERNS_ALLOWED_RANGE[0]
             <= max_rag_patterns
@@ -658,7 +668,15 @@ def rag_templates_optimization(
 
     event_handler = TmpEventHandler()
     max_rag_patterns = optimization_settings.get("max_number_of_rag_patterns", DEFAULT_MAX_NUMBER_OF_RAG_PATTERNS)
-    optimizer_settings = GAMOptSettings(max_evals=int(max_rag_patterns))
+    if isinstance(max_rag_patterns, str):
+        try:
+            max_rag_patterns = int(max_rag_patterns.strip())
+        except ValueError as exc:
+            raise ValueError(
+                "optimization_settings.max_number_of_rag_patterns must be a valid integer "
+                f"(e.g. from the pipeline UI); got {max_rag_patterns!r}."
+            ) from exc
+    optimizer_settings = GAMOptSettings(max_evals=max_rag_patterns)
 
     benchmark_data = pd.read_json(Path(test_data))
 
