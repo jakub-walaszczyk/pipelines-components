@@ -8,6 +8,7 @@ from ..generate_managed_pipelines import (
     METADATA_STABILITY_VALUES,
     STABILITY_TO_MANAGED_DISPLAY,
     ManagedPipelineMetadataError,
+    collect_managed_pipelines,
     managed_pipeline_entry_from_dir,
 )
 
@@ -91,3 +92,21 @@ def test_metadata_stability_values_match_validate_metadata():
     """Keep in sync with scripts/validate_metadata STABILITY_OPTIONS."""
     assert METADATA_STABILITY_VALUES == frozenset({"experimental", "alpha", "beta", "stable"})
     assert set(STABILITY_TO_MANAGED_DISPLAY) == {"alpha", "beta", "stable"}
+
+
+def test_collect_managed_pipelines_missing_pipelines_root_raises(tmp_path: Path):
+    """Missing pipelines/ must not yield an empty list silently."""
+    repo = tmp_path
+    with pytest.raises(FileNotFoundError, match="pipelines directory not found"):
+        collect_managed_pipelines(repo)
+
+
+def test_collect_managed_pipelines_skips_non_mapping_metadata(tmp_path: Path):
+    """Non-mapping YAML content should be ignored safely."""
+    repo = tmp_path
+    pipe_dir = repo / "pipelines" / "training" / "p"
+    pipe_dir.mkdir(parents=True)
+    (pipe_dir / "pipeline.py").touch()
+    (pipe_dir / "metadata.yaml").write_text("- not-a-mapping\n", encoding="utf-8")
+
+    assert collect_managed_pipelines(repo) == []

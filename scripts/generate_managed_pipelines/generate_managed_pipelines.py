@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+from collections.abc import Mapping
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
@@ -114,11 +115,6 @@ def managed_pipeline_entry_from_dir(
             pipeline_dir=dir_path,
         ) from e
     path_str = f"{rel_path.as_posix()}/{PIPELINE_PY}"
-    if not path_str.strip():
-        raise ManagedPipelineMetadataError(
-            f"{label}: could not build pipeline path",
-            pipeline_dir=dir_path,
-        )
 
     pipeline_py = dir_path / PIPELINE_PY
     description = _resolve_pipeline_description(metadata, pipeline_py)
@@ -142,7 +138,7 @@ def load_metadata(metadata_path: Path) -> dict | None:
     """
     if not metadata_path.is_file():
         return None
-    with open(metadata_path) as f:
+    with open(metadata_path, encoding="utf-8") as f:
         return yaml.safe_load(f)
 
 
@@ -173,17 +169,20 @@ def collect_managed_pipelines(repo_root: Path) -> list[ManagedPipelineEntry]:
         List of ``ManagedPipelineEntry`` records.
 
     Raises:
+        FileNotFoundError: If ``<repo_root>/pipelines`` is missing or not a directory.
         ManagedPipelineMetadataError: If any ``managed: true`` pipeline has invalid metadata.
     """
     pipelines_root = repo_root / "pipelines"
     if not pipelines_root.is_dir():
-        return []
+        raise FileNotFoundError(
+            f"pipelines directory not found or not a directory: {pipelines_root}",
+        )
 
     result: list[ManagedPipelineEntry] = []
     for dir_path in discover_pipeline_dirs(pipelines_root):
         meta_path = dir_path / METADATA_FILENAME
         metadata = load_metadata(meta_path)
-        if not metadata:
+        if not metadata or not isinstance(metadata, Mapping):
             continue
         if metadata.get("managed") is not True:
             continue
@@ -217,9 +216,20 @@ def main() -> int:
     repo_root = get_repo_root()
     output_path = args.output if args.output is not None else repo_root / OUTPUT_FILENAME
 
+    pipelines_root = repo_root / "pipelines"
+    if not pipelines_root.is_dir():
+        print(
+            f"Error: pipelines directory not found or not a directory: {pipelines_root}",
+            file=sys.stderr,
+        )
+        return 1
+
     try:
         pipelines = collect_managed_pipelines(repo_root)
     except ManagedPipelineMetadataError as e:
+        print(f"Error: {e}", file=sys.stderr)
+        return 1
+    except FileNotFoundError as e:
         print(f"Error: {e}", file=sys.stderr)
         return 1
 
