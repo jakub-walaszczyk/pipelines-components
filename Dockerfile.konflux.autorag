@@ -14,7 +14,7 @@ COPY pipelines/training/autorag/documents_rag_optimization_pipeline/seed_docling
      /tmp/
 
 ## TODO: Ensure build isolation
-RUN pip install --index-url https://console.redhat.com/api/pypi/public-rhai/rhoai/3.4/cpu-ubi9-test/simple/ --no-cache-dir -r /tmp/requirements.txt
+RUN pip install --index-url https://console.redhat.com/api/pypi/public-rhai/rhoai/3.4/cpu-ubi9/simple/ --no-cache-dir -r /tmp/requirements.txt
 RUN pip install --index-url https://pypi.org/simple --no-cache-dir -r /tmp/requirements-pypi.txt
 
 # Docling models for offline text extraction. Hermeto: prefetch with generic lockfile (see /tmp/artifacts.lock.yaml)
