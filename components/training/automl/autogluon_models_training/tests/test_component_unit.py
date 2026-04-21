@@ -2,6 +2,7 @@
 
 import json
 import sys
+from contextlib import contextmanager
 from pathlib import Path
 from unittest import mock
 
@@ -42,6 +43,31 @@ def _dataframes_with_real_pandas(build):
     finally:
         if saved is not None:
             sys.modules["pandas"] = saved
+
+
+@contextmanager
+def _real_pandas_sys_modules():
+    """Use real ``pandas`` in ``sys.modules`` so ``python_func`` cleansing runs on real ``DataFrame`` objects."""
+    saved = sys.modules["pandas"]
+    sys.modules.pop("pandas")
+    import importlib
+
+    sys.modules["pandas"] = importlib.import_module("pandas")
+    try:
+        yield
+    finally:
+        sys.modules["pandas"] = saved
+
+
+def _mock_csv_frame(label_column: str = "target", feature_cols: tuple[str, ...] = ("feature1",)):
+    """Minimal ``read_csv`` mock row so cleansing finds ``label_column`` in ``columns``."""
+    cols = list(feature_cols)
+    if label_column not in cols:
+        cols.append(label_column)
+    m = mock.MagicMock()
+    m.columns = cols
+    m.empty = False
+    return m
 
 
 RUN_ID = "run-456"
@@ -137,7 +163,7 @@ class TestAutogluonModelsTrainingUnitTests:
         mock_predictor_clone.feature_importance.return_value = mock.MagicMock(to_dict=lambda: {"feature1": 0.1})
         mock_predictor_clone.predict.return_value = mock.MagicMock()
 
-        mock_train_df, mock_test_df, mock_extra_df = mock.MagicMock(), mock.MagicMock(), mock.MagicMock()
+        mock_train_df, mock_test_df, mock_extra_df = _mock_csv_frame(), _mock_csv_frame(), _mock_csv_frame()
         mock_read_csv.side_effect = [mock_train_df, mock_test_df, mock_extra_df]
 
         workspace_path = str(tmp_path / "ws")
@@ -258,10 +284,9 @@ class TestAutogluonModelsTrainingUnitTests:
             assert "feature1" in nb_text
             assert "'target'" not in nb_text
 
-    @mock.patch("pandas.read_csv")
     @mock.patch("autogluon.tabular.TabularPredictor")
     def test_read_csv_frames_replace_inf_and_drop_duplicates_before_fit(
-        self, mock_predictor_class, mock_read_csv, mock_notebooks, tmp_path
+        self, mock_predictor_class, mock_notebooks, tmp_path
     ):
         """Train, test, extra: inf→NaN, dedupe, then label ``dropna`` before ``fit`` / ``refit_full``."""
 
@@ -282,7 +307,7 @@ class TestAutogluonModelsTrainingUnitTests:
             return train, test, extra
 
         train_df, test_df, extra_df = _dataframes_with_real_pandas(_frames)
-        mock_read_csv.side_effect = [train_df, test_df, extra_df]
+        read_csv_mock = mock.Mock(side_effect=[train_df, test_df, extra_df])
 
         mock_predictor = mock.MagicMock()
         mock_predictor_clone = mock.MagicMock()
@@ -306,9 +331,16 @@ class TestAutogluonModelsTrainingUnitTests:
         mock_test_data = mock.MagicMock()
         mock_test_data.path = "/tmp/test.csv"
 
-        autogluon_models_training.python_func(
-            **_base_call_kwargs(workspace_path, mock_models_artifact, mock_test_data, mock_notebooks),
-        )
+        with _real_pandas_sys_modules():
+            with mock.patch.object(sys.modules["pandas"], "read_csv", read_csv_mock):
+                autogluon_models_training.python_func(
+                    **_base_call_kwargs(workspace_path, mock_models_artifact, mock_test_data, mock_notebooks),
+                )
+
+        assert read_csv_mock.call_count == 3
+        assert read_csv_mock.call_args_list[0][0][0] == "/tmp/train.csv"
+        assert read_csv_mock.call_args_list[1][0][0] == "/tmp/test.csv"
+        assert read_csv_mock.call_args_list[2][0][0] == "/tmp/extra.csv"
 
         fit_train = mock_predictor_class.return_value.fit.call_args[1]["train_data"]
         assert len(fit_train) == 1
@@ -321,11 +353,8 @@ class TestAutogluonModelsTrainingUnitTests:
         assert len(extra_passed) == 1
         assert extra_passed["target"].tolist() == [5.0]
 
-    @mock.patch("pandas.read_csv")
     @mock.patch("autogluon.tabular.TabularPredictor")
-    def test_raises_when_train_empty_after_label_dropna(
-        self, mock_predictor_class, mock_read_csv, mock_notebooks, tmp_path
-    ):
+    def test_raises_when_train_empty_after_label_dropna(self, mock_predictor_class, mock_notebooks, tmp_path):
         """All ±inf labels become NaN and are dropped — no train rows left → clear ``ValueError``."""
 
         def _frames(pd):
@@ -336,7 +365,7 @@ class TestAutogluonModelsTrainingUnitTests:
             return train, test
 
         train_df, test_df = _dataframes_with_real_pandas(_frames)
-        mock_read_csv.side_effect = [train_df, test_df]
+        read_csv_mock = mock.Mock(side_effect=[train_df, test_df])
 
         workspace_path = str(tmp_path / "ws")
         Path(workspace_path).mkdir()
@@ -346,29 +375,28 @@ class TestAutogluonModelsTrainingUnitTests:
         mock_models_artifact.path = models_output_dir
         mock_models_artifact.metadata = {}
 
-        with pytest.raises(ValueError, match="No train rows remain after cleansing"):
-            autogluon_models_training.python_func(
-                label_column="target",
-                task_type="regression",
-                top_n=1,
-                train_data_path="/tmp/train.csv",
-                test_data=mock.MagicMock(path="/tmp/test.csv"),
-                workspace_path=workspace_path,
-                pipeline_name=PIPELINE_NAME,
-                run_id=RUN_ID,
-                sample_row=SAMPLE_ROW,
-                models_artifact=mock_models_artifact,
-                notebooks=mock_notebooks,
-                extra_train_data_path="",
-            )
+        with _real_pandas_sys_modules():
+            with mock.patch.object(sys.modules["pandas"], "read_csv", read_csv_mock):
+                with pytest.raises(ValueError, match="No train rows remain after cleansing"):
+                    autogluon_models_training.python_func(
+                        label_column="target",
+                        task_type="regression",
+                        top_n=1,
+                        train_data_path="/tmp/train.csv",
+                        test_data=mock.MagicMock(path="/tmp/test.csv"),
+                        workspace_path=workspace_path,
+                        pipeline_name=PIPELINE_NAME,
+                        run_id=RUN_ID,
+                        sample_row=SAMPLE_ROW,
+                        models_artifact=mock_models_artifact,
+                        notebooks=mock_notebooks,
+                        extra_train_data_path="",
+                    )
 
         mock_predictor_class.assert_not_called()
 
-    @mock.patch("pandas.read_csv")
     @mock.patch("autogluon.tabular.TabularPredictor")
-    def test_read_csv_train_test_only_cleansing_without_extra(
-        self, mock_predictor_class, mock_read_csv, mock_notebooks, tmp_path
-    ):
+    def test_read_csv_train_test_only_cleansing_without_extra(self, mock_predictor_class, mock_notebooks, tmp_path):
         """When ``extra_train_data_path`` is empty, only train and test frames are cleansed."""
 
         def _frames(pd):
@@ -377,7 +405,7 @@ class TestAutogluonModelsTrainingUnitTests:
             return train, test
 
         train_df, test_df = _dataframes_with_real_pandas(_frames)
-        mock_read_csv.side_effect = [train_df, test_df]
+        read_csv_mock = mock.Mock(side_effect=[train_df, test_df])
 
         mock_predictor = mock.MagicMock()
         mock_predictor_clone = mock.MagicMock()
@@ -399,25 +427,27 @@ class TestAutogluonModelsTrainingUnitTests:
         mock_models_artifact.path = models_output_dir
         mock_models_artifact.metadata = {}
 
-        autogluon_models_training.python_func(
-            label_column="target",
-            task_type="regression",
-            top_n=1,
-            train_data_path="/tmp/train.csv",
-            test_data=mock.MagicMock(path="/tmp/test.csv"),
-            workspace_path=workspace_path,
-            pipeline_name=PIPELINE_NAME,
-            run_id=RUN_ID,
-            sample_row=SAMPLE_ROW,
-            models_artifact=mock_models_artifact,
-            notebooks=mock_notebooks,
-            extra_train_data_path="",
-        )
+        with _real_pandas_sys_modules():
+            with mock.patch.object(sys.modules["pandas"], "read_csv", read_csv_mock):
+                autogluon_models_training.python_func(
+                    label_column="target",
+                    task_type="regression",
+                    top_n=1,
+                    train_data_path="/tmp/train.csv",
+                    test_data=mock.MagicMock(path="/tmp/test.csv"),
+                    workspace_path=workspace_path,
+                    pipeline_name=PIPELINE_NAME,
+                    run_id=RUN_ID,
+                    sample_row=SAMPLE_ROW,
+                    models_artifact=mock_models_artifact,
+                    notebooks=mock_notebooks,
+                    extra_train_data_path="",
+                )
 
         fit_train = mock_predictor_class.return_value.fit.call_args[1]["train_data"]
         assert len(fit_train) == 2
         assert bool(fit_train["f"].isna().any())
-        assert mock_read_csv.call_count == 2
+        assert read_csv_mock.call_count == 2
 
     @mock.patch("pandas.read_csv")
     @mock.patch("autogluon.tabular.TabularPredictor")
@@ -435,7 +465,7 @@ class TestAutogluonModelsTrainingUnitTests:
         mock_predictor_clone.feature_importance.return_value = mock.MagicMock(to_dict=lambda: {"f": 0.1})
         mock_predictor_clone.predict.return_value = mock.MagicMock()
 
-        mock_train_df, mock_test_df = mock.MagicMock(), mock.MagicMock()
+        mock_train_df, mock_test_df = _mock_csv_frame(), _mock_csv_frame()
         mock_read_csv.side_effect = [mock_train_df, mock_test_df]
 
         workspace_path = str(tmp_path / "ws")
@@ -489,7 +519,7 @@ class TestAutogluonModelsTrainingUnitTests:
         confusion_matrix_dict = {"0": {"0": 5, "1": 0}, "1": {"0": 0, "1": 3}}
         mock_confusion_matrix.return_value = mock.MagicMock(to_dict=lambda: confusion_matrix_dict)
 
-        mock_read_csv.side_effect = [mock.MagicMock(), mock.MagicMock()]
+        mock_read_csv.side_effect = [_mock_csv_frame(), _mock_csv_frame()]
 
         workspace_path = str(tmp_path / "ws")
         Path(workspace_path).mkdir()
@@ -565,7 +595,7 @@ class TestAutogluonModelsTrainingUnitTests:
         mock_predictor.label = "target"
         mock_predictor.eval_metric = "r2"
         _mock_leaderboard_top_models(mock_predictor, ["LightGBM_BAG_L1"])
-        mock_read_csv.side_effect = [mock.MagicMock(), mock.MagicMock()]
+        mock_read_csv.side_effect = [_mock_csv_frame(), _mock_csv_frame()]
 
         workspace_path = str(tmp_path / "ws")
         Path(workspace_path).mkdir()
@@ -620,7 +650,7 @@ class TestAutogluonModelsTrainingUnitTests:
         mock_predictor_clone.evaluate_predictions.return_value = {"r2": 0.9}
         mock_predictor_clone.feature_importance.return_value = mock.MagicMock(to_dict=lambda: {"f": 0.1})
         mock_predictor_clone.predict.return_value = mock.MagicMock()
-        mock_read_csv.side_effect = [mock.MagicMock(), mock.MagicMock()]
+        mock_read_csv.side_effect = [_mock_csv_frame(), _mock_csv_frame()]
 
         workspace_path = str(tmp_path / "ws")
         Path(workspace_path).mkdir()
@@ -670,7 +700,7 @@ class TestAutogluonModelsTrainingUnitTests:
         mock_predictor_clone.evaluate_predictions.return_value = {"r2": 0.9}
         mock_predictor_clone.feature_importance.return_value = mock.MagicMock(to_dict=lambda: {"f": 0.1})
         mock_predictor_clone.predict.return_value = mock.MagicMock()
-        mock_read_csv.side_effect = [mock.MagicMock(), mock.MagicMock()]
+        mock_read_csv.side_effect = [_mock_csv_frame(), _mock_csv_frame()]
 
         workspace_path = str(tmp_path / "ws")
         Path(workspace_path).mkdir()
@@ -722,7 +752,7 @@ class TestAutogluonModelsTrainingUnitTests:
         mock_predictor_clone.predict.side_effect = lambda df, model: lgbm_preds if "LightGBM" in model else cat_preds
         mock_predictor_clone.evaluate_predictions.side_effect = lambda y_true, y_pred: _metrics_by_pred[id(y_pred)]
         mock_predictor_clone.feature_importance.return_value = mock.MagicMock(to_dict=lambda: {"f": 0.1})
-        mock_read_csv.side_effect = [mock.MagicMock(), mock.MagicMock()]
+        mock_read_csv.side_effect = [_mock_csv_frame(), _mock_csv_frame()]
 
         workspace_path = str(tmp_path / "ws")
         Path(workspace_path).mkdir()
@@ -796,7 +826,7 @@ class TestAutogluonModelsTrainingUnitTests:
         mock_predictor.problem_type = "quantile"  # unsupported in notebook dispatch
         mock_predictor.label = "target"
         _mock_leaderboard_top_models(mock_predictor, ["LightGBM_BAG_L1"])
-        mock_read_csv.side_effect = [mock.MagicMock(), mock.MagicMock()]
+        mock_read_csv.side_effect = [_mock_csv_frame(), _mock_csv_frame()]
 
         workspace_path = str(tmp_path / "ws")
         Path(workspace_path).mkdir()
@@ -832,7 +862,7 @@ class TestAutogluonModelsTrainingUnitTests:
         mock_predictor.problem_type = "regression"
         mock_predictor.label = "target"
         _mock_leaderboard_top_models(mock_predictor, ["LightGBM_BAG_L1"])
-        mock_read_csv.side_effect = [mock.MagicMock(), mock.MagicMock()]
+        mock_read_csv.side_effect = [_mock_csv_frame(), _mock_csv_frame()]
 
         workspace_path = str(tmp_path / "ws")
         Path(workspace_path).mkdir()
