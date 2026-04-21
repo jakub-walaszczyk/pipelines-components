@@ -30,9 +30,10 @@ def autogluon_models_training(
 ) -> NamedTuple("outputs", eval_metric=str):
     """Train AutoGluon models, select the top N, and refit each on the full dataset.
 
-    After reading each CSV from disk, **±infinity** is mapped to **NaN** and **full-row
-    duplicates** are removed on train, test, and extra-train frames (aligned with AutoAI
-    ``loadXy`` cleansing before fitting).
+    After reading each CSV from disk, **±infinity** is mapped to **NaN**, **full-row
+    duplicates** are removed, and rows with a **missing label** (NaN in ``label_column``)
+    are dropped on train, test, and extra-train frames. AutoGluon rejects non-finite
+    labels; this matches the tabular loader and AutoAI-style ``loadXy`` cleansing.
 
     This component combines the model selection and full-refit stages into a single
     step. It trains a TabularPredictor on sampled data, ranks all models on the test
@@ -67,7 +68,8 @@ def autogluon_models_training(
     Raises:
         TypeError: If any required string parameter is empty or configs have wrong types.
         ValueError: If ``task_type`` is invalid, ``top_n`` is out of range, ``sample_row``
-            is not a JSON list, or ``problem_type`` is unsupported for notebook generation.
+            is not a JSON list, ``problem_type`` is unsupported for notebook generation, or
+            train/test data has no rows with a finite label after cleansing.
         FileNotFoundError: If train/test data or predictor paths cannot be found.
     """  # noqa: E501
     import json
@@ -121,21 +123,54 @@ def autogluon_models_training(
     DEFAULT_PRESET = "medium_quality"
     DEFAULT_TIME_LIMIT = 30 * 60  # 30 minutes
 
+    def _clean_frame_after_read(df, *, role: str) -> None:
+        """Replace ±inf with NaN, drop full-row duplicates, drop rows with missing label (inplace)."""
+        df.replace([math.inf, -math.inf], float("nan"), inplace=True)
+        df.drop_duplicates(inplace=True)
+        if label_column not in df.columns:
+            raise ValueError(
+                f"Label column {label_column!r} not found in {role} CSV. Available columns: {list(df.columns)}"
+            )
+        n_before = len(df)
+        df.dropna(subset=[label_column], inplace=True)
+        n_drop = n_before - len(df)
+        if n_drop:
+            logger.info(
+                "Dropped %s row(s) with missing label in %s data (%r); %s rows remain.",
+                n_drop,
+                role,
+                label_column,
+                len(df),
+            )
+
     # 1. models selection stage
 
     train_data_df = pd.read_csv(train_data_path)
-    train_data_df.replace([math.inf, -math.inf], float("nan"), inplace=True)
-    train_data_df.drop_duplicates(inplace=True)
+    _clean_frame_after_read(train_data_df, role="train")
+    if train_data_df.empty:
+        raise ValueError(
+            f"No train rows remain after cleansing (inf→NaN, dedupe, dropna on {label_column!r}). "
+            "Ensure the training CSV has at least one row with a finite label."
+        )
 
     test_data_df = pd.read_csv(test_data.path)
-    test_data_df.replace([math.inf, -math.inf], float("nan"), inplace=True)
-    test_data_df.drop_duplicates(inplace=True)
+    _clean_frame_after_read(test_data_df, role="test")
+    if test_data_df.empty:
+        raise ValueError(
+            f"No test rows remain after cleansing (inf→NaN, dedupe, dropna on {label_column!r}). "
+            "Ensure the test CSV has at least one row with a finite label."
+        )
 
     extra_train_df = None
     if extra_train_data_path.strip():
         extra_train_df = pd.read_csv(extra_train_data_path)
-        extra_train_df.replace([math.inf, -math.inf], float("nan"), inplace=True)
-        extra_train_df.drop_duplicates(inplace=True)
+        _clean_frame_after_read(extra_train_df, role="extra_train")
+        if extra_train_df.empty:
+            logger.warning(
+                "Extra train CSV has no rows with a finite label after cleansing; "
+                "passing train_data_extra=None to refit_full."
+            )
+            extra_train_df = None
 
     eval_metric = "r2" if task_type == "regression" else "accuracy"
 

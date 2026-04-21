@@ -1,7 +1,6 @@
 """Unit tests for the autogluon_models_training component."""
 
 import json
-import math
 import sys
 from pathlib import Path
 from unittest import mock
@@ -264,7 +263,7 @@ class TestAutogluonModelsTrainingUnitTests:
     def test_read_csv_frames_replace_inf_and_drop_duplicates_before_fit(
         self, mock_predictor_class, mock_read_csv, mock_notebooks, tmp_path
     ):
-        """Train, test, and extra frames: ±inf → NaN and full-row dedup run before ``fit`` / ``refit_full``."""
+        """Train, test, extra: inf→NaN, dedupe, then label ``dropna`` before ``fit`` / ``refit_full``."""
 
         def _frames(pd):
             train = pd.DataFrame(
@@ -312,20 +311,58 @@ class TestAutogluonModelsTrainingUnitTests:
         )
 
         fit_train = mock_predictor_class.return_value.fit.call_args[1]["train_data"]
-        assert len(fit_train) == 2
-        tvals = fit_train["target"].tolist()
-        assert tvals[0] == 10.0
-        assert math.isnan(tvals[1])
-        assert not any(isinstance(v, float) and math.isinf(v) for v in tvals)
+        assert len(fit_train) == 1
+        assert fit_train["target"].tolist() == [10.0]
 
         lb_df = mock_predictor.leaderboard.call_args[0][0]
         assert len(lb_df) == 1
 
         extra_passed = mock_predictor_clone.refit_full.call_args[1]["train_data_extra"]
-        assert len(extra_passed) == 2
-        ev = extra_passed["target"].tolist()
-        assert ev[0] == 5.0
-        assert math.isnan(ev[1])
+        assert len(extra_passed) == 1
+        assert extra_passed["target"].tolist() == [5.0]
+
+    @mock.patch("pandas.read_csv")
+    @mock.patch("autogluon.tabular.TabularPredictor")
+    def test_raises_when_train_empty_after_label_dropna(
+        self, mock_predictor_class, mock_read_csv, mock_notebooks, tmp_path
+    ):
+        """All ±inf labels become NaN and are dropped — no train rows left → clear ``ValueError``."""
+
+        def _frames(pd):
+            train = pd.DataFrame(
+                {"f": [1.0, 2.0], "target": [float("inf"), float("-inf")]},
+            )
+            test = pd.DataFrame({"f": [1.0], "target": [0.0]})
+            return train, test
+
+        train_df, test_df = _dataframes_with_real_pandas(_frames)
+        mock_read_csv.side_effect = [train_df, test_df]
+
+        workspace_path = str(tmp_path / "ws")
+        Path(workspace_path).mkdir()
+        models_output_dir = str(tmp_path / "out")
+        Path(models_output_dir).mkdir()
+        mock_models_artifact = mock.MagicMock()
+        mock_models_artifact.path = models_output_dir
+        mock_models_artifact.metadata = {}
+
+        with pytest.raises(ValueError, match="No train rows remain after cleansing"):
+            autogluon_models_training.python_func(
+                label_column="target",
+                task_type="regression",
+                top_n=1,
+                train_data_path="/tmp/train.csv",
+                test_data=mock.MagicMock(path="/tmp/test.csv"),
+                workspace_path=workspace_path,
+                pipeline_name=PIPELINE_NAME,
+                run_id=RUN_ID,
+                sample_row=SAMPLE_ROW,
+                models_artifact=mock_models_artifact,
+                notebooks=mock_notebooks,
+                extra_train_data_path="",
+            )
+
+        mock_predictor_class.assert_not_called()
 
     @mock.patch("pandas.read_csv")
     @mock.patch("autogluon.tabular.TabularPredictor")
