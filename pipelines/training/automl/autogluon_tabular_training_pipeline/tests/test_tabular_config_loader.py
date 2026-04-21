@@ -36,6 +36,7 @@ def test_load_configs_rejects_null_label_column(tmp_path: Path) -> None:
 
 
 def test_load_configs_accepts_valid_file(tmp_path: Path) -> None:
+    """Valid tabular config JSON loads into a single entry with expected fields."""
     path = tmp_path / "configs.json"
     path.write_text(json.dumps([_minimal_tabular_entry()]), encoding="utf-8")
     loaded = test_configs._load_configs(path)

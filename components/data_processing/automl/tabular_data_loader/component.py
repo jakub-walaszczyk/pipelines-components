@@ -76,9 +76,8 @@ def automl_data_loader(  # noqa: D417
     """  # noqa: E501
     import io
     import logging
-    import os
-
     import math
+    import os
 
     import boto3
     import pandas as pd
