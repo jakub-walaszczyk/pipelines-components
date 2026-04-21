@@ -126,10 +126,19 @@ def autogluon_models_training(
     def _clean_frame_after_read(df, *, role: str) -> None:
         """Replace +/-inf with NaN, drop full-row duplicates, drop rows with missing label (inplace)."""
         df.replace([math.inf, -math.inf], float("nan"), inplace=True)
-        df.drop_duplicates(inplace=True)
         if label_column not in df.columns:
             raise ValueError(
                 f"Label column {label_column!r} not found in {role} CSV. Available columns: {list(df.columns)}"
+            )
+        n_before_dedup = len(df)
+        df.drop_duplicates(inplace=True)
+        n_dup_dropped = n_before_dedup - len(df)
+        if n_dup_dropped:
+            logger.info(
+                "Dropped %s full-row duplicate(s) in %s data; %s rows remain.",
+                n_dup_dropped,
+                role,
+                len(df),
             )
         n_before = len(df)
         df.dropna(subset=[label_column], inplace=True)

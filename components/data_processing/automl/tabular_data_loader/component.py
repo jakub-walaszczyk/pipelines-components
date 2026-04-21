@@ -317,6 +317,12 @@ def automl_data_loader(  # noqa: D417
 
     sampled_dataframe.replace([math.inf, -math.inf], float("nan"), inplace=True)
 
+    if label_column not in sampled_dataframe.columns:
+        raise ValueError(
+            f"Label column {label_column!r} not found in the dataset. "
+            f"Available columns: {list(sampled_dataframe.columns)}"
+        )
+
     n_before_dedup = len(sampled_dataframe)
     sampled_dataframe.drop_duplicates(inplace=True)
     n_dup_dropped = n_before_dedup - len(sampled_dataframe)
@@ -325,14 +331,8 @@ def automl_data_loader(  # noqa: D417
 
     if sampled_dataframe.empty:
         raise ValueError(
-            "No data rows remain after replacing infinite values and dropping duplicate rows. "
-            "Check the source CSV and sampling limits."
-        )
-
-    if label_column not in sampled_dataframe.columns:
-        raise ValueError(
-            f"Label column {label_column!r} not found in the dataset. "
-            f"Available columns: {list(sampled_dataframe.columns)}"
+            "No valid data rows remain after replacing infinite values and dropping duplicates. "
+            "The source CSV may contain only infinite/NaN values or duplicate rows."
         )
 
     n_before_drop = len(sampled_dataframe)
