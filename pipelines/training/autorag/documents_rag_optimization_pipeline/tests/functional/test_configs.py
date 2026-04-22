@@ -6,83 +6,13 @@ tags for filtering. Use RHOAI_TEST_CONFIG_TAGS (comma-separated) to run only
 configs that have at least one of the given tags.
 """
 
+import json
 import os
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Any
 
-_CONFIGS_NEGATIVE = [
-    {
-        "id": "TC-F-1",
-        "description": "Verify failure on not provided 'vector_io_provider_id'.",
-        "tags": [],
-        "expected_result": "fail",
-        "llama_stack_vector_io_provider_type": None,
-        "pipeline_params_overrides": {
-            "optimization_metric": "faithfulness",
-            "optimization_max_rag_patterns": 5,
-            "llama_stack_vector_io_provider_id": None,
-            "embeddings_models": None,
-            "generation_models": None,
-        },
-    },
-    {
-        "id": "TC-F-2",
-        "description": "Verify failure on provided incorrect models.",
-        "tags": [],
-        "expected_result": "fail",
-        "llama_stack_vector_io_provider_type": "milvus-lite",
-        "pipeline_params_overrides": {
-            "optimization_metric": "answer_correctness",
-            "optimization_max_rag_patterns": 6,
-            "embeddings_models": ["non-exisiting-embedding-models-for-failure"],
-            "generation_models": ["non-exisiting-generation-models-for-failure"],
-        },
-    },
-    {
-        "id": "TC-F-3",
-        "description": "Verify failure on incorrect input_data_key.",
-        "tags": [],
-        "expected_result": "fail",
-        "llama_stack_vector_io_provider_type": "milvus-lite",
-        "pipeline_params_overrides": {
-            "input_data_key": "non/existing/key",
-            "optimization_metric": "answer_correctness",
-            "optimization_max_rag_patterns": 6,
-            "embeddings_models": None,
-            "generation_models": None,
-        },
-    },
-]
-
-
-_CONFIGS_POSITIVE = [
-    {
-        "id": "TC-P-1",
-        "description": "answer_correctness, milvus-lite provider, 4 patterns, default models",
-        "tags": ["smoke", "milvus-lite"],
-        "expected_result": "pass",
-        "llama_stack_vector_io_provider_type": "milvus-lite",
-        "pipeline_params_overrides": {
-            "optimization_metric": "answer_correctness",
-            "optimization_max_rag_patterns": 4,
-            "embeddings_models": None,
-            "generation_models": None,
-        },
-    },
-    {
-        "id": "TC-P-2",
-        "description": "faithfulness, milvus-remote provider, 8 patterns, constrained models",
-        "tags": ["smoke", "milvus-remote"],
-        "expected_result": "pass",
-        "llama_stack_vector_io_provider_type": "milvus-remote",
-        "pipeline_params_overrides": {
-            "optimization_metric": "faithfulness",
-            "optimization_max_rag_patterns": 12,
-            "embeddings_models": "ENV",
-            "generation_models": "ENV",
-        },
-    },
-]
+_CONFIGS_JSON_PATH = Path(__file__).parent / "test_configs.json"
 
 # Milvus provider ID resolution: maps sentinel values in JSON to env var keys
 # in the functional config dict.
@@ -168,7 +98,12 @@ class TestConfig:
 
 def _load_configs(pass_type: str) -> list[TestConfig]:
     """Load test configs from test_configs.json and return TestConfig instances."""
-    data = _CONFIGS_POSITIVE if pass_type == "positive" else _CONFIGS_NEGATIVE
+    with open(_CONFIGS_JSON_PATH) as f:
+        all_items = json.load(f)
+
+    expected = "pass" if pass_type == "positive" else "fail"
+    data = [item for item in all_items if item.get("expected_result") == expected]
+
     configs = []
     for i, item in enumerate(data):
         if not isinstance(item, dict):

@@ -1,0 +1,69 @@
+[
+    {
+        "id": "TC-F-1",
+        "description": "Verify failure on not provided 'vector_io_provider_id'.",
+        "tags": [],
+        "expected_result": "fail",
+        "llama_stack_vector_io_provider_type": null,
+        "pipeline_params_overrides": {
+            "optimization_metric": "faithfulness",
+            "optimization_max_rag_patterns": 5,
+            "llama_stack_vector_io_provider_id": null,
+            "embeddings_models": null,
+            "generation_models": null
+        }
+    },
+    {
+        "id": "TC-F-2",
+        "description": "Verify failure on provided incorrect models.",
+        "tags": [],
+        "expected_result": "fail",
+        "llama_stack_vector_io_provider_type": "milvus-lite",
+        "pipeline_params_overrides": {
+            "optimization_metric": "answer_correctness",
+            "optimization_max_rag_patterns": 6,
+            "embeddings_models": ["non-exisiting-embedding-models-for-failure"],
+            "generation_models": ["non-exisiting-generation-models-for-failure"]
+        }
+    },
+    {
+        "id": "TC-F-3",
+        "description": "Verify failure on incorrect input_data_key.",
+        "tags": [],
+        "expected_result": "fail",
+        "llama_stack_vector_io_provider_type": "milvus-lite",
+        "pipeline_params_overrides": {
+            "input_data_key": "non/existing/key",
+            "optimization_metric": "answer_correctness",
+            "optimization_max_rag_patterns": 6,
+            "embeddings_models": null,
+            "generation_models": null
+        }
+    },
+    {
+        "id": "TC-P-1",
+        "description": "answer_correctness, milvus-lite provider, 4 patterns, default models",
+        "tags": ["smoke", "milvus-lite"],
+        "expected_result": "pass",
+        "llama_stack_vector_io_provider_type": "milvus-lite",
+        "pipeline_params_overrides": {
+            "optimization_metric": "answer_correctness",
+            "optimization_max_rag_patterns": 4,
+            "embeddings_models": null,
+            "generation_models": null
+        }
+    },
+    {
+        "id": "TC-P-2",
+        "description": "faithfulness, milvus-remote provider, 8 patterns, constrained models",
+        "tags": ["smoke", "milvus-remote"],
+        "expected_result": "pass",
+        "llama_stack_vector_io_provider_type": "milvus-remote",
+        "pipeline_params_overrides": {
+            "optimization_metric": "faithfulness",
+            "optimization_max_rag_patterns": 12,
+            "embeddings_models": "ENV",
+            "generation_models": "ENV"
+        }
+    }
+]
