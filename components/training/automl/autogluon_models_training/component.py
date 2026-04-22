@@ -127,8 +127,7 @@ def autogluon_models_training(
     train_data_df = pd.read_csv(train_data_path)
     if label_column not in train_data_df.columns:
         raise ValueError(
-            f"Label column {label_column!r} not found in train CSV. "
-            f"Available columns: {list(train_data_df.columns)}"
+            f"Label column {label_column!r} not found in train CSV. Available columns: {list(train_data_df.columns)}"
         )
     if train_data_df.empty:
         raise ValueError("Training CSV is empty. Ensure the data loader produced valid training data.")
@@ -136,8 +135,7 @@ def autogluon_models_training(
     test_data_df = pd.read_csv(test_data.path)
     if label_column not in test_data_df.columns:
         raise ValueError(
-            f"Label column {label_column!r} not found in test CSV. "
-            f"Available columns: {list(test_data_df.columns)}"
+            f"Label column {label_column!r} not found in test CSV. Available columns: {list(test_data_df.columns)}"
         )
     if test_data_df.empty:
         raise ValueError("Test CSV is empty. Ensure the data loader produced valid test data.")
