@@ -19,18 +19,22 @@ import logging
 import random
 
 import pytest
-from pipelines.training.autorag.documents_rag_optimization_pipeline.tests.functional.conftest import \
-    get_functional_config
-from pipelines.training.autorag.documents_rag_optimization_pipeline.tests.functional.test_configs import \
-    get_test_configs_for_run, TestConfig
+
+from pipelines.training.autorag.documents_rag_optimization_pipeline.tests.functional.conftest import (
+    get_functional_config,
+)
+from pipelines.training.autorag.documents_rag_optimization_pipeline.tests.functional.test_configs import (
+    TestConfig,
+    get_test_configs_for_run,
+)
 
 from .utils import (
-    _run_succeeded,
-    _run_failed,
-    _run_pipeline_and_wait,
-    _get_run_state,
     _collect_failure_details,
     _download_and_execute_notebooks,
+    _get_run_state,
+    _run_failed,
+    _run_pipeline_and_wait,
+    _run_succeeded,
     _validate_artifacts_in_s3,
 )
 
@@ -55,7 +59,9 @@ _EXPECTED_FAIL_TIMEOUT_CAP = 600
     reason="RHOAI functional test env not set (set RHOAI_KFP_URL, RHOAI_TOKEN, pipeline params; see .env.example)",
 )
 class TestAutoRAGFunctional:
+    """Functional tests for the Documents RAG Optimization pipeline."""
 
+    @pytest.mark.negative
     @pytest.mark.parametrize(
         "test_scenario_config", NEGATIVE_CONFIGS_FOR_RUN, ids=[c.id for c in NEGATIVE_CONFIGS_FOR_RUN]
     )
@@ -68,6 +74,7 @@ class TestAutoRAGFunctional:
         pipeline_run_timeout,
         s3_client_functional,
     ):
+        """Verify pipeline fails as expected for negative test scenarios."""
         if not kfp_client_functional:
             pytest.skip("Functional test prerequisites not available")
 
@@ -91,7 +98,7 @@ class TestAutoRAGFunctional:
         # Log failure details for observability even on expected failures
         logger.info(_collect_failure_details(kfp_client_functional, run_id, config=functional_env_config))
 
-
+    @pytest.mark.positive
     @pytest.mark.parametrize(
         "test_scenario_config", POSITIVE_CONFIGS_FOR_RUN, ids=[c.id for c in POSITIVE_CONFIGS_FOR_RUN]
     )

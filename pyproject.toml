@@ -197,6 +197,8 @@ python_functions = ["test_*"]
 markers = [
     "integration: marks test as integration/functional/e2e (requires RHOAI cluster and .env config).",
     "functional: marks test as a parametrized functional test (requires RHOAI cluster and .env config).",
+    "positive: marks test as a positive (expected-pass) scenario.",
+    "negative: marks test as a negative (expected-fail) scenario.",
 ]
 # Don't search these directories
 norecursedirs = [

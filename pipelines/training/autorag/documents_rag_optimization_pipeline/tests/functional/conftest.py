@@ -1,13 +1,17 @@
 import json
+import logging
 import os
 
-from dotenv import load_dotenv, find_dotenv
 import pytest
+from dotenv import find_dotenv, load_dotenv
 
 from pipelines.training.autorag.documents_rag_optimization_pipeline.tests.utils import (
     _make_kfp_client,
     _make_s3_client,
 )
+
+
+logger = logging.getLogger(__name__)
 
 
 def get_functional_config():
@@ -31,6 +35,7 @@ def get_functional_config():
     llama_secret = os.environ.get("LLAMA_STACK_SECRET_NAME")
 
     if not all([kfp_url, token, t_secret, t_bucket, t_key, i_secret, i_bucket, i_key, llama_secret]):
+        logger.info("Missing required environmental variables. Functional config cannot be created.")
         return None
 
     endpoint = os.environ.get("ARTIFACTS_AWS_S3_ENDPOINT")
@@ -74,6 +79,7 @@ def get_functional_config():
 
 @pytest.fixture(scope="session")
 def functional_env_config():
+    """Session-scoped functional test config fixture."""
     return get_functional_config()
 
 

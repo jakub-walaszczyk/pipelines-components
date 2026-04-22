@@ -6,13 +6,12 @@ import tempfile
 from pathlib import Path
 
 import pytest
-from dotenv import load_dotenv, find_dotenv
+from dotenv import find_dotenv, load_dotenv
 
 from pipelines.training.autorag.documents_rag_optimization_pipeline.tests.utils import (
     _make_kfp_client,
     _make_s3_client,
 )
-
 
 _tests_dir = Path(__file__).resolve().parent
 if str(_tests_dir) not in sys.path:
@@ -46,8 +45,7 @@ DOCRAG_EMBEDDINGS_MODELS_ENV = "FUNC_TESTS_EMBEDDINGS_MODELS"
 DOCRAG_GENERATION_MODELS_ENV = "FUNC_TESTS_GENERATION_MODELS"
 
 
-@pytest.fixture(scope="session")
-def docrag_integration_config():
+def get_docrag_integration_config():
     """Session-scoped RHOAI integration config from env; None if not set."""
     load_dotenv(find_dotenv(".env"))
 
@@ -90,6 +88,12 @@ def docrag_integration_config():
         "s3_region": region.strip(),
         "s3_bucket_artifacts": bucket_artifacts.strip() if bucket_artifacts else None,
     }
+
+
+@pytest.fixture(scope="session")
+def docrag_integration_config():
+    """Session-scoped RHOAI integration config fixture."""
+    return get_docrag_integration_config()
 
 
 @pytest.fixture(scope="session")

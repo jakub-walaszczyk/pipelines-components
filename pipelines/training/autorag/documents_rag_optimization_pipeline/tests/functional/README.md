@@ -1,7 +1,7 @@
 # Documents RAG Optimization Pipeline -- Functional Tests
 
 Parametrized functional tests that run the Documents RAG Optimization pipeline
-end-to-end on a Red Hat OpenShift AI (RHOAI) cluster.  Each test scenario is
+end-to-end on a Red Hat OpenShift AI (RHOAI) cluster. Each test scenario is
 declared as a data-driven config (positive or negative), submitted to KFP, and
 validated against expected outcomes.
 
@@ -55,12 +55,12 @@ FUNCTIONAL_TESTS_TAGS=smoke \
 # 4. Run only negative scenarios
 uv run python -m pytest \
   pipelines/training/autorag/documents_rag_optimization_pipeline/tests/functional/ \
-  -v -k "negative"
+  -v -m "negative"
 
 # 5. Run only positive scenarios
 uv run python -m pytest \
   pipelines/training/autorag/documents_rag_optimization_pipeline/tests/functional/ \
-  -v -k "positive"
+  -v -m "positive"
 ```
 
 ## Environment variables

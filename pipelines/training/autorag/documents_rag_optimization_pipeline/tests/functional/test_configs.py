@@ -14,7 +14,7 @@ _CONFIGS_NEGATIVE = [
     {
         "id": "TC-F-1",
         "description": "Verify failure on not provided 'vector_io_provider_id'.",
-        "tags": ["negative"],
+        "tags": [],
         "expected_result": "fail",
         "llama_stack_vector_io_provider_type": None,
         "pipeline_params_overrides": {
@@ -23,12 +23,12 @@ _CONFIGS_NEGATIVE = [
             "llama_stack_vector_io_provider_id": None,
             "embeddings_models": None,
             "generation_models": None,
-        }
+        },
     },
     {
         "id": "TC-F-2",
         "description": "Verify failure on provided incorrect models.",
-        "tags": ["negative"],
+        "tags": [],
         "expected_result": "fail",
         "llama_stack_vector_io_provider_type": "milvus-lite",
         "pipeline_params_overrides": {
@@ -36,12 +36,12 @@ _CONFIGS_NEGATIVE = [
             "optimization_max_rag_patterns": 6,
             "embeddings_models": ["non-exisiting-embedding-models-for-failure"],
             "generation_models": ["non-exisiting-generation-models-for-failure"],
-        }
+        },
     },
     {
         "id": "TC-F-3",
         "description": "Verify failure on incorrect input_data_key.",
-        "tags": ["negative"],
+        "tags": [],
         "expected_result": "fail",
         "llama_stack_vector_io_provider_type": "milvus-lite",
         "pipeline_params_overrides": {
@@ -50,8 +50,8 @@ _CONFIGS_NEGATIVE = [
             "optimization_max_rag_patterns": 6,
             "embeddings_models": None,
             "generation_models": None,
-        }
-    }
+        },
+    },
 ]
 
 
@@ -59,7 +59,7 @@ _CONFIGS_POSITIVE = [
     {
         "id": "TC-P-1",
         "description": "answer_correctness, milvus-lite provider, 4 patterns, default models",
-        "tags": ["positive", "smoke", "milvus-lite"],
+        "tags": ["smoke", "milvus-lite"],
         "expected_result": "pass",
         "llama_stack_vector_io_provider_type": "milvus-lite",
         "pipeline_params_overrides": {
@@ -67,21 +67,21 @@ _CONFIGS_POSITIVE = [
             "optimization_max_rag_patterns": 4,
             "embeddings_models": None,
             "generation_models": None,
-        }
+        },
     },
     {
         "id": "TC-P-2",
         "description": "faithfulness, milvus-remote provider, 8 patterns, constrained models",
-        "tags": ["positive", "smoke", "milvus-remote"],
+        "tags": ["smoke", "milvus-remote"],
         "expected_result": "pass",
         "llama_stack_vector_io_provider_type": "milvus-remote",
         "pipeline_params_overrides": {
             "optimization_metric": "faithfulness",
             "optimization_max_rag_patterns": 12,
             "embeddings_models": "ENV",
-            "generation_models": "ENV"
-        }
-    }
+            "generation_models": "ENV",
+        },
+    },
 ]
 
 # Milvus provider ID resolution: maps sentinel values in JSON to env var keys
@@ -212,6 +212,7 @@ def get_test_configs_for_run(pass_type: str, tags: None | list[str] = None) -> l
     Args:
         pass_type (str): Type of pass to run for this session. 'positive' or negative'
         tags (None | list[str]): List of tags to run for this session.
+
     Returns:
         list[TestConfig]: List of TestConfig instances.
     """

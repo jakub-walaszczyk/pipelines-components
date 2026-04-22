@@ -1,8 +1,8 @@
-from datetime import datetime, timezone
 import os
-from pathlib import Path
 import secrets
 import tempfile
+from datetime import datetime, timezone
+from pathlib import Path
 
 
 def _make_docrag_run_name():
@@ -139,10 +139,10 @@ def _derive_k8s_api_url(kfp_url):
     apps_idx = hostname.find(".apps.")
     if apps_idx < 0:
         return None
-    base_domain = hostname[apps_idx + len(".apps."):]
+    base_domain = hostname[apps_idx + len(".apps.") :]
     is_rosa = base_domain.startswith("rosa.")
     if is_rosa:
-        base_domain = base_domain[len("rosa."):]
+        base_domain = base_domain[len("rosa.") :]
     default_port = 443 if is_rosa else 6443
     port = os.environ.get("K8S_API_PORT", str(default_port)).strip()
     return f"https://api.{base_domain}:{port}"
