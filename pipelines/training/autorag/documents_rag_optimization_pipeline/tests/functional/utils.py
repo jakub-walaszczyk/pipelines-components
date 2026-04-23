@@ -26,16 +26,20 @@ def _run_pipeline_and_wait(client, compiled_path, arguments, timeout):
     return run_id, detail
 
 
+def _normalize_state(state):
+    """Normalize a state value (str or enum) to an uppercase string like 'FAILED'."""
+    if state is None:
+        return None
+    return str(getattr(state, "name", state)).upper()
+
+
 def _get_run_state(detail):
     """Extract the run state string from a run detail object."""
     run = getattr(detail, "run", detail)
     state = getattr(run, "state", None)
     if state is None and hasattr(run, "status"):
         state = getattr(run.status, "state", None)
-    if state is None:
-        return None
-    # Handle both str and enum-like objects (KFP v2 RuntimeState)
-    return str(getattr(state, "name", state)).upper()
+    return _normalize_state(state)
 
 
 def _run_succeeded(detail):
@@ -86,7 +90,7 @@ def _collect_failure_details(client, run_id, config=None):
             for task in task_list:
                 name = getattr(task, "display_name", None) or getattr(task, "task_id", "?")
                 state = getattr(task, "state", None)
-                state_str = str(state).upper() if state else "NOT_STARTED"
+                state_str = _normalize_state(state) or "NOT_STARTED"
 
                 if name in _INTERNAL_NAMES or any(name.endswith(s) for s in _INTERNAL_SUFFIXES):
                     continue

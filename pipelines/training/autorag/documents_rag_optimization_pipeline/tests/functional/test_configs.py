@@ -2,7 +2,7 @@
 
 Configurations are loaded from test_configs.json in this directory. Each entry
 specifies pipeline parameter overrides, expected result (pass/fail), and optional
-tags for filtering. Use RHOAI_TEST_CONFIG_TAGS (comma-separated) to run only
+tags for filtering. Use FUNCTIONAL_TESTS_TAGS (comma-separated) to run only
 configs that have all of the given tags.
 """
 
@@ -30,7 +30,7 @@ class TestConfig:
         id: Short identifier for the config (used in pytest parametrize ids).
         description: Human-readable summary of the test scenario.
         tags: Optional list of tags for filtering (e.g. ["smoke", "positive"]).
-            Use RHOAI_TEST_CONFIG_TAGS to run only configs matching at least one tag.
+            Use FUNCTIONAL_TESTS_TAGS to run only configs that have all of the given tags.
         expected_result: "pass" or "fail" — whether the pipeline run should succeed.
         pipeline_params_overrides: Keys matching pipeline parameter names. Values
             are resolved against the base config using these rules:

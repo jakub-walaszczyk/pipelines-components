@@ -7,9 +7,9 @@ from pathlib import Path
 import pytest
 
 from pipelines.training.autorag.documents_rag_optimization_pipeline.tests.utils import (
-    _make_kfp_client,
-    _make_s3_client,
     get_docrag_integration_config,
+    make_kfp_client,
+    make_s3_client,
 )
 
 
@@ -22,7 +22,7 @@ def docrag_integration_config():
 @pytest.fixture(scope="session")
 def kfp_client(docrag_integration_config):
     """Session-scoped KFP client for integration tests."""
-    return _make_kfp_client(docrag_integration_config)
+    return make_kfp_client(docrag_integration_config)
 
 
 @pytest.fixture(scope="session")
@@ -51,4 +51,4 @@ def pipeline_run_timeout():
 @pytest.fixture(scope="session")
 def s3_client(docrag_integration_config):
     """Session-scoped S3 client for integration test artifact checks (optional)."""
-    return _make_s3_client(docrag_integration_config)
+    return make_s3_client(docrag_integration_config)

@@ -24,14 +24,22 @@ ARTIFACTS_S3_REGION_ENV = "ARTIFACTS_AWS_DEFAULT_REGION"
 S3_BUCKET_ARTIFACTS_ENV = "RHOAI_TEST_ARTIFACTS_BUCKET"
 # Functional test: milvus provider IDs (one per milvus mode)
 LLAMA_STACK_VECTOR_IO_PROVIDER_MILVUS_LITE_ENV = "LLAMA_STACK_VECTOR_IO_PROVIDER_ID_MILVUS_LITE"
-LLAMA_STACK_VECTOR_IO_PROVIDER_MILVUS_STANDALONE_ENV = "LLAMA_STACK_VECTOR_IO_PROVIDER_ID_MILVUS_STANDALONE"
+LLAMA_STACK_VECTOR_IO_PROVIDER_MILVUS_REMOTE_ENV = "LLAMA_STACK_VECTOR_IO_PROVIDER_ID_MILVUS_REMOTE"
 # Functional test: constrained model lists (JSON arrays)
-DOCRAG_EMBEDDINGS_MODELS_ENV = "FUNC_TESTS_EMBEDDINGS_MODELS"
-DOCRAG_GENERATION_MODELS_ENV = "FUNC_TESTS_GENERATION_MODELS"
+FUNC_TEST_EMBEDDINGS_MODELS_ENV = "FUNC_TEST_EMBEDDINGS_MODELS"
+FUNC_TEST_GENERATION_MODELS_ENV = "FUNC_TEST_GENERATION_MODELS"
 
 
-def get_docrag_integration_config():
-    """Session-scoped RHOAI integration config from env; None if not set."""
+def build_base_env_config(default_project=None):
+    """Parse shared env vars for KFP connection, pipeline params, and S3 config.
+
+    Args:
+        default_project: Fallback value when RHOAI_PROJECT_NAME / KFP_NAMESPACE is unset.
+
+    Returns:
+        Dict with parsed config values, or None if required vars are missing.
+        Required: kfp_url, token, test/input data secrets/buckets/keys, llama_stack_secret.
+    """
     from dotenv import find_dotenv, load_dotenv
 
     load_dotenv(find_dotenv(".env"))
@@ -46,9 +54,8 @@ def get_docrag_integration_config():
     i_bucket = os.environ.get(INPUT_DATA_BUCKET_ENV)
     i_key = os.environ.get(INPUT_DATA_KEY_ENV)
     llama_secret = os.environ.get(LLAMA_STACK_SECRET_ENV)
-    llama_vector_io = os.environ.get(LLAMA_STACK_VECTOR_IO_PROVIDER_ENV)
 
-    if not all([kfp_url, token, t_secret, t_bucket, t_key, i_secret, i_bucket, i_key, llama_secret, llama_vector_io]):
+    if not all([kfp_url, token, t_secret, t_bucket, t_key, i_secret, i_bucket, i_key, llama_secret]):
         return None
 
     endpoint = os.environ.get(ARTIFACTS_S3_ENDPOINT_ENV)
@@ -60,7 +67,7 @@ def get_docrag_integration_config():
     return {
         "rhoai_kfp_url": kfp_url.strip().rstrip("/"),
         "rhoai_token": token.strip(),
-        "rhoai_project": (project or "docrag-integration-test").strip(),
+        "rhoai_project": (project or default_project or "").strip(),
         "test_data_secret_name": t_secret.strip(),
         "test_data_bucket_name": t_bucket.strip(),
         "test_data_key": t_key.strip(),
@@ -68,7 +75,6 @@ def get_docrag_integration_config():
         "input_data_bucket_name": i_bucket.strip(),
         "input_data_key": i_key.strip(),
         "llama_stack_secret_name": llama_secret.strip(),
-        "llama_stack_vector_io_provider_id": llama_vector_io.strip(),
         "s3_endpoint": endpoint.strip() if endpoint else None,
         "s3_access_key": access.strip() if access else None,
         "s3_secret_key": secret.strip() if secret else None,
@@ -77,7 +83,21 @@ def get_docrag_integration_config():
     }
 
 
-def _make_kfp_client(config):
+def get_docrag_integration_config():
+    """Session-scoped RHOAI integration config from env; None if not set."""
+    base = build_base_env_config(default_project="docrag-integration-test")
+    if base is None:
+        return None
+
+    llama_vector_io = os.environ.get(LLAMA_STACK_VECTOR_IO_PROVIDER_ENV)
+    if not llama_vector_io:
+        return None
+
+    base["llama_stack_vector_io_provider_id"] = llama_vector_io.strip()
+    return base
+
+
+def make_kfp_client(config):
     """Create a KFP client from a config dict; returns None if config is None."""
     if config is None:
         logger.info("Skipping KFP client creation due to missing config.")
@@ -97,7 +117,7 @@ def _make_kfp_client(config):
     )
 
 
-def _make_s3_client(config):
+def make_s3_client(config):
     """Create a boto3 S3 client from a config dict; returns None if not configured."""
     if config is None or not config.get("s3_endpoint"):
         logger.info("Skipping S3 client creation due to missing config.")
