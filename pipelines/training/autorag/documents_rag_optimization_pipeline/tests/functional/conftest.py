@@ -3,15 +3,26 @@ import logging
 import os
 
 import pytest
-from dotenv import find_dotenv, load_dotenv
 
 from pipelines.training.autorag.documents_rag_optimization_pipeline.tests.utils import (
     _make_kfp_client,
     _make_s3_client,
 )
 
-
 logger = logging.getLogger(__name__)
+
+
+def _parse_json_list(env_name):
+    raw = os.environ.get(env_name)
+    if not raw:
+        return None
+    try:
+        value = json.loads(raw)
+    except json.JSONDecodeError as exc:
+        raise ValueError(f"{env_name} is not valid JSON: {exc}") from exc
+    if not isinstance(value, list):
+        raise ValueError(f"{env_name} must be a JSON array, got {type(value).__name__}")
+    return value
 
 
 def get_functional_config():
@@ -21,6 +32,8 @@ def get_functional_config():
     llama_stack_vector_io_provider_id or input_data_key since those are
     overridden per-scenario). Adds milvus provider IDs and constrained model lists.
     """
+    from dotenv import find_dotenv, load_dotenv
+
     load_dotenv(find_dotenv(".env"))
 
     kfp_url = os.environ.get("RHOAI_KFP_URL") or os.environ.get("KFP_HOST")
@@ -34,7 +47,7 @@ def get_functional_config():
     i_key = os.environ.get("INPUT_DATA_KEY")
     llama_secret = os.environ.get("LLAMA_STACK_SECRET_NAME")
 
-    if not all([kfp_url, token, t_secret, t_bucket, t_key, i_secret, i_bucket, i_key, llama_secret]):
+    if not all([kfp_url, token, project, t_secret, t_bucket, t_key, i_secret, i_bucket, i_key, llama_secret]):
         logger.info("Missing required environmental variables. Functional config cannot be created.")
         return None
 
@@ -49,15 +62,13 @@ def get_functional_config():
     vector_io_milvus_remote = os.environ.get("LLAMA_STACK_VECTOR_IO_PROVIDER_ID_MILVUS_REMOTE", "")
 
     # Constrained model lists (optional JSON arrays)
-    embeddings_models_raw = os.environ.get("FUNC_TEST_EMBEDDINGS_MODELS")
-    generation_models_raw = os.environ.get("FUNC_TEST_GENERATION_MODELS")
-    embeddings_models = json.loads(embeddings_models_raw) if embeddings_models_raw else None
-    generation_models = json.loads(generation_models_raw) if generation_models_raw else None
+    embeddings_models = _parse_json_list("FUNC_TEST_EMBEDDINGS_MODELS")
+    generation_models = _parse_json_list("FUNC_TEST_GENERATION_MODELS")
 
     return {
         "rhoai_kfp_url": kfp_url.strip().rstrip("/"),
         "rhoai_token": token.strip(),
-        "rhoai_project": (project or "docrag-integration-test").strip(),
+        "rhoai_project": project.strip(),
         "test_data_secret_name": t_secret.strip(),
         "test_data_bucket_name": t_bucket.strip(),
         "test_data_key": t_key.strip(),

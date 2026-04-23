@@ -3,7 +3,7 @@
 Configurations are loaded from test_configs.json in this directory. Each entry
 specifies pipeline parameter overrides, expected result (pass/fail), and optional
 tags for filtering. Use RHOAI_TEST_CONFIG_TAGS (comma-separated) to run only
-configs that have at least one of the given tags.
+configs that have all of the given tags.
 """
 
 import json
@@ -141,8 +141,8 @@ def _load_configs(pass_type: str) -> list[TestConfig]:
 def get_test_configs_for_run(pass_type: str, tags: None | list[str] = None) -> list[TestConfig]:
     """Return configs to run for this session, optionally filtered by tags.
 
-    If tags are passed, only configs that have at least one of those tags are
-    returned. Otherwise all configs are returned.
+    If tags are passed, only configs that have all of those tags are returned.
+    All configs are returned otherwise.
 
     Args:
         pass_type (str): Type of pass to run for this session. 'positive' or negative'
@@ -156,9 +156,9 @@ def get_test_configs_for_run(pass_type: str, tags: None | list[str] = None) -> l
     tags = tags or []
 
     env_tags_raw = os.getenv("FUNCTIONAL_TESTS_TAGS")
-    env_tags = [t.lower() for t in env_tags_raw.split(",")] if env_tags_raw is not None else []
+    env_tags = [t.strip().lower() for t in env_tags_raw.split(",") if t.strip()] if env_tags_raw else []
 
-    all_tags = tags + env_tags
+    all_tags = {t.lower() for t in (tags + env_tags)}
 
     if not all_tags:
         return test_configs

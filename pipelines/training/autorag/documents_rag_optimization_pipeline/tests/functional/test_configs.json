@@ -22,8 +22,8 @@
         "pipeline_params_overrides": {
             "optimization_metric": "answer_correctness",
             "optimization_max_rag_patterns": 6,
-            "embeddings_models": ["non-exisiting-embedding-models-for-failure"],
-            "generation_models": ["non-exisiting-generation-models-for-failure"]
+            "embeddings_models": ["non-existing-embedding-models-for-failure"],
+            "generation_models": ["non-existing-generation-models-for-failure"]
         }
     },
     {
@@ -55,7 +55,7 @@
     },
     {
         "id": "TC-P-2",
-        "description": "faithfulness, milvus-remote provider, 8 patterns, constrained models",
+        "description": "faithfulness, milvus-remote provider, 12 patterns, constrained models",
         "tags": ["smoke", "milvus-remote"],
         "expected_result": "pass",
         "llama_stack_vector_io_provider_type": "milvus-remote",

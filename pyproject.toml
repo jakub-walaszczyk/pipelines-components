@@ -52,8 +52,9 @@ test_automl = [
 
 # Dependnecies for AutoRAG functional tests
 test_autorag = [
-    "kfp-components[tests]",
+    "kfp-components[test]",
     "boto3",
+    "kubernetes",
     "notebook",
     "nbformat",
     "papermill",

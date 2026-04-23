@@ -18,7 +18,7 @@ import pytest
 
 def _skip_if_no_rag_integration_config():
     """Return True if integration config is not set (skip test)."""
-    from .conftest import get_docrag_integration_config
+    from .utils import get_docrag_integration_config
 
     return get_docrag_integration_config() is None
 

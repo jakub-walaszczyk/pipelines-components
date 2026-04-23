@@ -32,7 +32,10 @@ def _get_run_state(detail):
     state = getattr(run, "state", None)
     if state is None and hasattr(run, "status"):
         state = getattr(run.status, "state", None)
-    return state.upper() if isinstance(state, str) else None
+    if state is None:
+        return None
+    # Handle both str and enum-like objects (KFP v2 RuntimeState)
+    return str(getattr(state, "name", state)).upper()
 
 
 def _run_succeeded(detail):
@@ -267,21 +270,31 @@ def _validate_artifacts_in_s3(s3_client, bucket, prefix):
                 key = obj["Key"]
                 result["all_keys"].append(key)
                 lower_key = key.lower()
-                if key.endswith("pattern.json") or "rag_patterns" in lower_key:
+                basename = lower_key.rsplit("/", 1)[-1]
+                segments = lower_key.split("/")
+                if lower_key.endswith("pattern.json") or "rag_patterns" in lower_key:
                     result["pattern_keys"].append(key)
-                if key.endswith(".ipynb") and "indexing" in lower_key:
+                elif lower_key.endswith(".ipynb") and (
+                    "indexing" in basename or any("indexing" in s for s in segments)
+                ):
                     result["indexing_notebook_keys"].append(key)
-                if key.endswith(".ipynb") and "inference" in lower_key:
+                elif lower_key.endswith(".ipynb") and (
+                    "inference" in basename or any("inference" in s for s in segments)
+                ):
                     result["inference_notebook_keys"].append(key)
-                if "evaluation_results.json" in key:
+                elif "evaluation_results.json" in lower_key:
                     result["evaluation_results_keys"].append(key)
-                if "leaderboard" in lower_key or key.endswith(".html"):
+                elif "leaderboard" in basename or any("leaderboard" in s for s in segments):
                     result["leaderboard_keys"].append(key)
-                if "v1_responses_body.json" in key:
+                elif "v1_responses_body.json" in lower_key:
                     result["responses_body_keys"].append(key)
     except Exception as e:
         raise AssertionError(f"Failed to list S3 artifacts under s3://{bucket}/{prefix}: {e}") from e
     return result
+
+
+_NOTEBOOK_ENV_PREFIXES = ("LLAMA_STACK_CLIENT_", "AWS_")
+_SYSTEM_ENV_KEYS = frozenset({"PATH", "HOME", "TMPDIR", "TEMP", "TMP", "LANG", "LC_ALL", "USER", "LOGNAME", "SHELL"})
 
 
 def _inject_and_run(notebook_path: Path, output_path: Path) -> None:
@@ -299,9 +312,26 @@ def _inject_and_run(notebook_path: Path, output_path: Path) -> None:
     with open(injected_path, "w", encoding="utf-8") as f:
         nbformat.write(nb, f)
 
+    original_cwd = os.getcwd()
+    original_environ = os.environ.copy()
     try:
+        safe_cwd = output_path.parent
+        safe_cwd.mkdir(parents=True, exist_ok=True)
+        os.chdir(safe_cwd)
+
+        filtered_env = {
+            k: v
+            for k, v in original_environ.items()
+            if k in _SYSTEM_ENV_KEYS or any(k.startswith(p) for p in _NOTEBOOK_ENV_PREFIXES)
+        }
+        os.environ.clear()
+        os.environ.update(filtered_env)
+
         pm.execute_notebook(str(injected_path), str(output_path), kernel_name="python3")
     finally:
+        os.environ.clear()
+        os.environ.update(original_environ)
+        os.chdir(original_cwd)
         injected_path.unlink(missing_ok=True)
 
 
