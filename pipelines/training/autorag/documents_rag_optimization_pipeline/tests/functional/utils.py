@@ -274,23 +274,17 @@ def _validate_artifacts_in_s3(s3_client, bucket, prefix):
                 key = obj["Key"]
                 result["all_keys"].append(key)
                 lower_key = key.lower()
-                basename = lower_key.rsplit("/", 1)[-1]
-                segments = lower_key.split("/")
-                if lower_key.endswith("pattern.json") or "rag_patterns" in lower_key:
+                if key.endswith("pattern.json") or "rag_patterns" in lower_key:
                     result["pattern_keys"].append(key)
-                elif lower_key.endswith(".ipynb") and (
-                    "indexing" in basename or any("indexing" in s for s in segments)
-                ):
+                if key.endswith(".ipynb") and "indexing" in lower_key:
                     result["indexing_notebook_keys"].append(key)
-                elif lower_key.endswith(".ipynb") and (
-                    "inference" in basename or any("inference" in s for s in segments)
-                ):
+                if key.endswith(".ipynb") and "inference" in lower_key:
                     result["inference_notebook_keys"].append(key)
-                elif "evaluation_results.json" in lower_key:
+                if "evaluation_results.json" in key:
                     result["evaluation_results_keys"].append(key)
-                elif "leaderboard" in basename or any("leaderboard" in s for s in segments):
+                if "leaderboard" in lower_key or key.endswith(".html"):
                     result["leaderboard_keys"].append(key)
-                elif "v1_responses_body.json" in lower_key:
+                if "v1_responses_body.json" in key:
                     result["responses_body_keys"].append(key)
     except Exception as e:
         raise AssertionError(f"Failed to list S3 artifacts under s3://{bucket}/{prefix}: {e}") from e
