@@ -166,7 +166,9 @@ def documents_rag_optimization_pipeline(
         rag_patterns=hpo_task.outputs["rag_patterns"],
     )
     prepare_responses_api_requests_task.set_caching_options(False)
-    prepare_responses_api_requests_task.set_cpu_request("500m").set_memory_request("2Gi").set_cpu_limit("32").set_memory_limit("64Gi")
+    prepare_responses_api_requests_task.set_cpu_request("500m").set_memory_request("2Gi").set_cpu_limit(
+        "32"
+    ).set_memory_limit("64Gi")
     use_secret_as_env(
         prepare_responses_api_requests_task,
         llama_stack_secret_name,
@@ -178,7 +180,9 @@ def documents_rag_optimization_pipeline(
 
     leaderboard_evaluation_task = leaderboard_evaluation(rag_patterns=hpo_task.outputs["rag_patterns"])
     leaderboard_evaluation_task.set_caching_options(False)
-    leaderboard_evaluation_task.set_cpu_request("1").set_memory_request("4Gi").set_cpu_limit("32").set_memory_limit("64Gi")
+    leaderboard_evaluation_task.set_cpu_request("1").set_memory_request("4Gi").set_cpu_limit("32").set_memory_limit(
+        "64Gi"
+    )
 
 
 if __name__ == "__main__":

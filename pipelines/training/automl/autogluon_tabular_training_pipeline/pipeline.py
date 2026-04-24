@@ -181,7 +181,9 @@ def autogluon_tabular_training_pipeline(
         eval_metric=training_task.outputs["eval_metric"],
     )
     leaderboard_evaluation_task.set_caching_options(False)
-    leaderboard_evaluation_task.set_cpu_request("1").set_memory_request("4Gi").set_cpu_limit("32").set_memory_limit("64Gi")
+    leaderboard_evaluation_task.set_cpu_request("1").set_memory_request("4Gi").set_cpu_limit("32").set_memory_limit(
+        "64Gi"
+    )
 
 
 if __name__ == "__main__":
