@@ -55,7 +55,7 @@ fsspec==2026.2.0
 fugue==0.9.7
 gluonts==0.16.2
 google-api-core==2.30.3
-google-auth==2.49.2
+google-auth==2.50.0
 google-cloud-core==2.5.1
 google-cloud-storage==3.10.1
 google-crc32c==1.8.0
@@ -75,9 +75,9 @@ itsdangerous==2.2.0
 Jinja2==3.1.6
 jmespath==1.1.0
 joblib==1.5.3
-kfp==2.16.0
-kfp-pipeline-spec==2.16.0
-kfp-server-api==2.16.0
+kfp==2.16.1
+kfp-pipeline-spec==2.16.1
+kfp-server-api==2.16.1
 kiwisolver==1.5.0
 kubernetes==35.0.0
 lightgbm==4.6.0
