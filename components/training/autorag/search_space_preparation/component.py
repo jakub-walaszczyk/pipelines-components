@@ -65,13 +65,10 @@ def search_space_preparation(
     from ai4rag.core.experiment.benchmark_data import BenchmarkData
     from ai4rag.core.experiment.mps import ModelsPreSelector
     from ai4rag.rag.embedding.base_model import BaseEmbeddingModel
-    from ai4rag.rag.embedding.ogx import OGXEmbeddingModel
     from ai4rag.rag.foundation_models.base_model import BaseFoundationModel
-    from ai4rag.rag.foundation_models.ogx import OGXFoundationModel
     from ai4rag.search_space.prepare.prepare_search_space import (
         prepare_search_space_with_ogx,
     )
-    from ai4rag.search_space.src.parameter import Parameter
     from ai4rag.search_space.src.search_space import AI4RAGSearchSpace
     from langchain_core.documents import Document
     from ogx_client import APIConnectionError as OGXAPIConnectionError

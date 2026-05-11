@@ -157,6 +157,12 @@ ignore = [
     "D415", # First line should end with punctuation (not needed for simple module names)
 ]
 
+[tool.ruff.lint.per-file-ignores]
+"**/notebook_templates/*.ipynb" = [
+    "E402",  # Module-level imports not at top of cell (notebooks use inline setup)
+    "E501",  # Line too long (pip install URLs cannot be split)
+    "F821",  # Undefined names (template placeholders replaced at runtime)
+]
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"

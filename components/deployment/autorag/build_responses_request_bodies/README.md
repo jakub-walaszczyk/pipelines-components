@@ -7,15 +7,15 @@
 Emit one OGX ``POST /v1/responses`` JSON body per RAG pattern directory.
 
 Expects the ``rag_patterns`` layout from ``rag_templates_optimization``: each subdirectory contains ``pattern.json``. For each pattern, writes ``v1_responses_body.json``, ``create_model_response.py``, and ``README.md`` (how to run the script) under a matching output subdirectory. The helper script
-embeds the OGX base URL from environment variable ``OGX_CLIENT_BASE_URL`` at pipeline run time (default ``http://localhost:8321`` if unset); each per-pattern ``README.md`` documents how to run the script and override that URL if needed. The generated ``create_model_response.py``
-resolves the API key from ``OGX_CLIENT_API_KEY`` or ``OGX_API_KEY`` (or a one-time prompt), sets ``os.environ`` for the process when you type a key at the prompt, then loops on questions until an empty line. No secret file is written. For TLS, the script honors ``REQUESTS_CA_BUNDLE``
-/ ``SSL_CERT_FILE`` for custom CA bundles (e.g. corporate/private PKI), and ``OGX_TLS_INSECURE=1`` as a dev-only opt-out that disables certificate verification with a stderr warning.
+embeds the OGX base URL from environment variable ``OGX_CLIENT_BASE_URL`` at pipeline run time (default ``http://localhost:8321`` if unset); each per-pattern ``README.md`` documents how to run the script and override that URL if needed. The generated ``create_model_response.py`` resolves the API key
+from ``OGX_CLIENT_API_KEY`` or ``OGX_API_KEY`` (or a one-time prompt), sets ``os.environ`` for the process when you type a key at the prompt, then loops on questions until an empty line. No secret file is written. For TLS, the script honors ``REQUESTS_CA_BUNDLE`` / ``SSL_CERT_FILE`` for custom CA
+bundles (e.g. corporate/private PKI), and ``OGX_TLS_INSECURE=1`` as a dev-only opt-out that disables certificate verification with a stderr warning.
 
 Request-body construction is defined inside this function so Kubeflow embeds it in ``ephemeral_component.py`` (module-level helpers in this file are not shipped to the executor).
 
-The generated body matches OpenAI-compatible ``POST /v1/responses`` (see OpenAI's `Migrate to the Responses API <https://developers.openai.com/api/docs/guides/migrate-to-responses>`__ and OGX's ``POST /v1/responses``): ``model``, ``input``, ``stream``, ``store``, ``metadata`` (string values
-only), optional ``instructions``, and optional ``tools`` / ``file_search`` when a collection name is set, plus ``tool_choice`` forcing file search and ``include: ["file_search_call.results"]`` to return file-search hits in the response. Replace ``vector_store_ids`` with OGX-registered
-vector store identifiers if your deployment does not use the collection name as the store id.
+The generated body matches OpenAI-compatible ``POST /v1/responses`` (see OpenAI's `Migrate to the Responses API <https://developers.openai.com/api/docs/guides/migrate-to-responses>`__ and OGX's ``POST /v1/responses``): ``model``, ``input``, ``stream``, ``store``, ``metadata`` (string values only),
+optional ``instructions``, and optional ``tools`` / ``file_search`` when a collection name is set, plus ``tool_choice`` forcing file search and ``include: ["file_search_call.results"]`` to return file-search hits in the response. Replace ``vector_store_ids`` with OGX-registered vector store
+identifiers if your deployment does not use the collection name as the store id.
 
 ## Inputs 📥
 
@@ -71,4 +71,4 @@ def example_pipeline():
 
 ## Additional Resources 📚
 
-- **Documentation**: [https://docs.ogx.ai/api/create-openai-response-v-1-responses-post](https://docs.ogx.ai/api/create-openai-response-v-1-responses-post)
+- **Documentation**: [https://docs.ogx.ai/api/create-response-v-1-responses-post](https://docs.ogx.ai/api/create-response-v-1-responses-post)
