@@ -54,7 +54,7 @@ def example_pipeline():
   - Kubeflow:
     - Name: Pipelines, Version: >=2.15.2
   - External Services:
-    - Name: OGX, Version: >=0.1.0
+    - Name: OGX, Version: >=0.8.0
 - **Tags**:
   - deployment
   - autorag
