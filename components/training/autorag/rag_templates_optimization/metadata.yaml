@@ -8,7 +8,7 @@ dependencies:
   external_services:
     - name: ai4rag
       version: ">=1.0.0"
-    - name: llama-stack API
+    - name: OGX API
       version: ">=1.0.0"
     - name: Milvus
       version: ">=2.0.0"

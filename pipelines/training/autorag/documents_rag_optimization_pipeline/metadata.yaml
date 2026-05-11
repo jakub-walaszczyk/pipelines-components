@@ -9,7 +9,7 @@ dependencies:
   external_services:
     - name: ai4rag
       version: ">=1.0.0"
-    - name: llama-stack API
+    - name: OGX API
       version: ">=1.0.0"
     - name: RHOAI Connections API
       version: ">=1.0.0"
