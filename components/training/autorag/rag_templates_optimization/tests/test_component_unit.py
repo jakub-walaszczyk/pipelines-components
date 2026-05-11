@@ -213,17 +213,13 @@ class TestRagTemplatesOptimizationUnitTests:
         """Any non-empty vector_io_provider_id string is accepted (no allowlist)."""
         mocks, extracted_text, test_data, report = self._setup_ogx_mocks(tmp_path)
         with pytest.raises(_SentinelAbort):
-            self._run_with_ogx(
-                mocks, extracted_text, test_data, report, vector_io_provider_id="my_custom_milvus"
-            )
+            self._run_with_ogx(mocks, extracted_text, test_data, report, vector_io_provider_id="my_custom_milvus")
 
     def test_vector_store_type_set_to_ogx(self, tmp_path):
         """AI4RAGExperiment receives vector_store_type 'ogx'."""
         mocks, extracted_text, test_data, report = self._setup_ogx_mocks(tmp_path)
         with pytest.raises(_SentinelAbort):
-            self._run_with_ogx(
-                mocks, extracted_text, test_data, report, vector_io_provider_id="milvus"
-            )
+            self._run_with_ogx(mocks, extracted_text, test_data, report, vector_io_provider_id="milvus")
 
         ai4rag_exp = mocks["ai4rag.core.experiment.experiment"].AI4RAGExperiment
         ai4rag_exp.assert_called_once()
@@ -239,9 +235,7 @@ class TestRagTemplatesOptimizationUnitTests:
         """Whitespace-only provider_id raises ValueError."""
         mocks, extracted_text, test_data, report = self._setup_ogx_mocks(tmp_path, abort_at_experiment=False)
         with pytest.raises(ValueError, match="vector_io_provider_id must be provided"):
-            self._run_with_ogx(
-                mocks, extracted_text, test_data, report, vector_io_provider_id="   "
-            )
+            self._run_with_ogx(mocks, extracted_text, test_data, report, vector_io_provider_id="   ")
 
     def test_max_number_of_rag_patterns_non_numeric_string_raises_value_error(self):
         """UI may pass string parameters; non-numeric strings are rejected with a clear error."""

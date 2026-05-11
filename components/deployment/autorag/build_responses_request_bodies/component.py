@@ -58,9 +58,7 @@ def prepare_responses_api_requests(
     output_filename = "v1_responses_body.json"
     script_filename = "create_model_response.py"
     readme_filename = "README.md"
-    ogx_base_url = (
-        (os.environ.get("OGX_CLIENT_BASE_URL") or "http://localhost:8321").strip().rstrip("/")
-    )
+    ogx_base_url = (os.environ.get("OGX_CLIENT_BASE_URL") or "http://localhost:8321").strip().rstrip("/")
     grounding_instruction = (
         "Use only information found in file_search results. "
         'If file_search results are insufficient, reply exactly: "I cannot answer based on the provided context."'

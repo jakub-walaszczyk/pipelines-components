@@ -204,9 +204,7 @@ def search_space_preparation(
     ogx_client_api_key = os.environ.get("OGX_CLIENT_API_KEY", None)
 
     if not ogx_client_base_url or not ogx_client_api_key:
-        raise ValueError(
-            "OGX_CLIENT_BASE_URL and OGX_CLIENT_API_KEY environment variables must be set."
-        )
+        raise ValueError("OGX_CLIENT_BASE_URL and OGX_CLIENT_API_KEY environment variables must be set.")
 
     client = _create_ogx_client()
 
