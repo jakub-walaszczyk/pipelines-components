@@ -228,13 +228,13 @@ class TestRagTemplatesOptimizationUnitTests:
     def test_missing_provider_id_raises_value_error(self, tmp_path):
         """None provider_id raises ValueError."""
         mocks, extracted_text, test_data, report = self._setup_ogx_mocks(tmp_path, abort_at_experiment=False)
-        with pytest.raises(ValueError, match="vector_io_provider_id must be provided"):
+        with pytest.raises(ValueError, match="vector_io_provider_id must be a non-empty string"):
             self._run_with_ogx(mocks, extracted_text, test_data, report, vector_io_provider_id=None)
 
     def test_whitespace_provider_id_raises_value_error(self, tmp_path):
         """Whitespace-only provider_id raises ValueError."""
         mocks, extracted_text, test_data, report = self._setup_ogx_mocks(tmp_path, abort_at_experiment=False)
-        with pytest.raises(ValueError, match="vector_io_provider_id must be provided"):
+        with pytest.raises(ValueError, match="vector_io_provider_id must be a non-empty string"):
             self._run_with_ogx(mocks, extracted_text, test_data, report, vector_io_provider_id="   ")
 
     def test_max_number_of_rag_patterns_non_numeric_string_raises_value_error(self):
@@ -255,6 +255,7 @@ class TestRagTemplatesOptimizationUnitTests:
                         rag_patterns=mock.MagicMock(path="/tmp/rag_patterns", metadata={}, uri=""),
                         embedded_artifact=mock.MagicMock(path="/tmp/embedded"),
                         test_data_key="small-dataset/benchmark.json",
+                        vector_io_provider_id="milvus",
                         optimization_settings={
                             "metric": "faithfulness",
                             "max_number_of_rag_patterns": "not-a-number",
@@ -314,6 +315,7 @@ class TestRagTemplatesOptimizationUnitTests:
                         rag_patterns=mock.MagicMock(path="/tmp/rag_patterns", metadata={}, uri=""),
                         embedded_artifact=mock.MagicMock(path="/tmp/embedded"),
                         test_data_key="small-dataset/benchmark.json",
+                        vector_io_provider_id="milvus",
                         optimization_settings={"metric": "faithfulness", "max_number_of_rag_patterns": 8},
                     )
 
@@ -384,6 +386,7 @@ class TestSSLFallbackRagTemplatesOptimization:
                     rag_patterns=rag_patterns,
                     embedded_artifact=embedded_artifact,
                     test_data_key="small-dataset/benchmark.json",
+                    vector_io_provider_id="milvus",
                 )
 
         assert ogx_call_count == 2, "OgxClient should be instantiated twice (initial + SSL retry)"
@@ -443,6 +446,7 @@ class TestSSLFallbackRagTemplatesOptimization:
                     rag_patterns=rag_patterns,
                     embedded_artifact=embedded_artifact,
                     test_data_key="small-dataset/benchmark.json",
+                    vector_io_provider_id="milvus",
                 )
 
         assert ogx_call_count == 2, "OgxClient should be instantiated twice (initial + SSL retry)"
@@ -480,6 +484,7 @@ class TestSSLFallbackRagTemplatesOptimization:
                     rag_patterns=rag_patterns,
                     embedded_artifact=embedded_artifact,
                     test_data_key="small-dataset/benchmark.json",
+                    vector_io_provider_id="milvus",
                 )
 
     @mock.patch.dict(
@@ -515,4 +520,5 @@ class TestSSLFallbackRagTemplatesOptimization:
                     rag_patterns=rag_patterns,
                     embedded_artifact=embedded_artifact,
                     test_data_key="small-dataset/benchmark.json",
+                    vector_io_provider_id="milvus",
                 )

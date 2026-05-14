@@ -595,9 +595,9 @@ def rag_templates_optimization(
 
     benchmark_data = pd.read_json(Path(test_data))
 
-    vector_io_provider_id = vector_io_provider_id.strip()
-    if not vector_io_provider_id:
+    if not isinstance(vector_io_provider_id, str) or not vector_io_provider_id.strip():
         raise ValueError("vector_io_provider_id must be a non-empty string.")
+    vector_io_provider_id = vector_io_provider_id.strip()
 
     rag_exp = AI4RAGExperiment(
         client=client,
