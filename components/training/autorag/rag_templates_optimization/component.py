@@ -686,7 +686,8 @@ def rag_templates_optimization(
             "settings": {
                 "vector_store": {
                     "datasource_type": idx.get("vector_store", {}).get("datasource_type")
-                    or rp.get("vector_store", {}).get("datasource_type"),
+                    or rp.get("vector_store", {}).get("datasource_type")
+                    or vector_io_provider_id,
                     "collection_name": getattr(evaluation_result, "collection", "") or "",
                 },
                 "chunking": {
