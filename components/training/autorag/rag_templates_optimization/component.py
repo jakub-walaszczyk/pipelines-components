@@ -16,7 +16,7 @@ def rag_templates_optimization(
     rag_patterns: dsl.Output[dsl.Artifact],
     embedded_artifact: dsl.EmbeddedInput[dsl.Dataset],
     test_data_key: Optional[str],
-    vector_io_provider_id: Optional[str] = None,
+    vector_io_provider_id: str,
     optimization_settings: Optional[dict] = None,
     input_data_key: Optional[str] = "",
 ):
@@ -535,11 +535,13 @@ def rag_templates_optimization(
 
         return documents
 
-    ogx_client_base_url = os.environ.get("OGX_CLIENT_BASE_URL", None)
-    ogx_client_api_key = os.environ.get("OGX_CLIENT_API_KEY", None)
+    ogx_client_base_url = (os.environ.get("OGX_CLIENT_BASE_URL") or "").strip()
+    ogx_client_api_key = (os.environ.get("OGX_CLIENT_API_KEY") or "").strip()
 
     if not ogx_client_base_url or not ogx_client_api_key:
-        raise ValueError("OGX_CLIENT_BASE_URL and OGX_CLIENT_API_KEY environment variables must be set.")
+        raise ValueError(
+            "OGX_CLIENT_BASE_URL and OGX_CLIENT_API_KEY environment variables must be set to non-empty values."
+        )
 
     client = _create_ogx_client(base_url=ogx_client_base_url, api_key=ogx_client_api_key)
 
@@ -593,8 +595,9 @@ def rag_templates_optimization(
 
     benchmark_data = pd.read_json(Path(test_data))
 
-    if not vector_io_provider_id or not vector_io_provider_id.strip():
-        raise ValueError("vector_io_provider_id must be provided when using OGX vector database.")
+    vector_io_provider_id = vector_io_provider_id.strip()
+    if not vector_io_provider_id:
+        raise ValueError("vector_io_provider_id must be a non-empty string.")
 
     rag_exp = AI4RAGExperiment(
         client=client,
