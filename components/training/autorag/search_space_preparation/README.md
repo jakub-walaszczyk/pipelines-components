@@ -63,7 +63,7 @@ def example_pipeline(
   - Kubeflow:
     - Name: Pipelines, Version: >=2.15.2
   - External Services:
-    - Name: ai4rag, Version: >=0.6.1
+    - Name: ai4rag, Version: ~=0.6.1
     - Name: pyYaml, Version: >=6.0.0
     - Name: pandas, Version: >=2.0.0
 - **Tags**:
@@ -71,7 +71,7 @@ def example_pipeline(
   - autorag
   - search-space
   - optimization
-- **Last Verified**: 2026-02-01 23:39:58.580000+00:00
+- **Last Verified**: 2026-05-14 00:00:00+00:00
 - **Owners**:
   - Approvers:
     - LukaszCmielowski

@@ -60,7 +60,7 @@ def example_pipeline():
   - autorag
   - ogx
   - responses-api
-- **Last Verified**: 2026-03-30 00:00:00+00:00
+- **Last Verified**: 2026-05-14 00:00:00+00:00
 - **Owners**:
   - Approvers:
     - LukaszCmielowski
@@ -71,4 +71,4 @@ def example_pipeline():
 
 ## Additional Resources 📚
 
-- **Documentation**: [https://docs.ogx.ai/api/create-response-v-1-responses-post](https://docs.ogx.ai/api/create-response-v-1-responses-post)
+- **Documentation**: [https://ogx-ai.github.io/docs/api/create-openai-response-v-1-responses-post](https://ogx-ai.github.io/docs/api/create-openai-response-v-1-responses-post)

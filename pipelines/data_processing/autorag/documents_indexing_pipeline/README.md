@@ -34,7 +34,7 @@ Defines a pipeline to load, sample, extract text, and index documents for AutoRA
   - External Services:
     - Name: docling, Version: >=2.72.0
     - Name: boto3, Version: >=1.42.34
-    - Name: ai4rag, Version: >=1.0.0
+    - Name: ai4rag, Version: ~=0.6.1
     - Name: RHOAI Connections API, Version: >=1.0.0
 - **Tags**:
   - data_processing
@@ -42,7 +42,7 @@ Defines a pipeline to load, sample, extract text, and index documents for AutoRA
   - documents_discovery
   - data_indexing
   - autorag
-- **Last Verified**: 2026-03-05 00:00:00+00:00
+- **Last Verified**: 2026-05-14 00:00:00+00:00
 - **Owners**:
   - Approvers:
     - LukaszCmielowski
