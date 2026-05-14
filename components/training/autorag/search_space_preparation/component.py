@@ -206,7 +206,7 @@ def search_space_preparation(
     if not ogx_client_base_url or not ogx_client_api_key:
         raise ValueError("OGX_CLIENT_BASE_URL and OGX_CLIENT_API_KEY environment variables must be set.")
 
-    client = _create_ogx_client()
+    client = _create_ogx_client(base_url=ogx_client_base_url, api_key=ogx_client_api_key)
 
     search_space = prepare_ai4rag_search_space()
 

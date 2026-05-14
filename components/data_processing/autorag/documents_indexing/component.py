@@ -124,9 +124,17 @@ def documents_indexing(
 
     params = OGXEmbeddingParams(**embedding_params)
 
+    ogx_base_url = os.getenv("OGX_CLIENT_BASE_URL")
+    ogx_api_key = os.getenv("OGX_CLIENT_API_KEY")
+    missing = [
+        name for name, val in (("OGX_CLIENT_BASE_URL", ogx_base_url), ("OGX_CLIENT_API_KEY", ogx_api_key)) if not val
+    ]
+    if missing:
+        raise RuntimeError(f"Required environment variable(s) not set: {', '.join(missing)}")
+
     client = _create_ogx_client(
-        base_url=os.getenv("OGX_CLIENT_BASE_URL"),
-        api_key=os.getenv("OGX_CLIENT_API_KEY"),
+        base_url=ogx_base_url,
+        api_key=ogx_api_key,
     )
 
     paths = sorted(Path(extracted_text.path).glob("*.md"))
@@ -140,7 +148,7 @@ def documents_indexing(
     chunker = LangChainChunker(method=chunking_method, chunk_size=chunk_size, chunk_overlap=chunk_overlap)
     embedding_model = OGXEmbeddingModel(client=client, model_id=embedding_model_id, params=params)
 
-    collection_name_param = {"reuse_collection_name": collection_name if collection_name is not None else {}}
+    collection_name_param = {"reuse_collection_name": collection_name} if collection_name is not None else {}
     ogx_vectorstore = OGXVectorStore(
         embedding_model=embedding_model,
         client=client,

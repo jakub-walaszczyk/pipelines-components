@@ -541,7 +541,7 @@ def rag_templates_optimization(
     if not ogx_client_base_url or not ogx_client_api_key:
         raise ValueError("OGX_CLIENT_BASE_URL and OGX_CLIENT_API_KEY environment variables must be set.")
 
-    client = _create_ogx_client()
+    client = _create_ogx_client(base_url=ogx_client_base_url, api_key=ogx_client_api_key)
 
     def construct_model_instance(loader, node: yml.MappingNode) -> BaseEmbeddingModel | BaseFoundationModel:
         """Instructs yml.Loader on how to construct "!Model" tag."""
@@ -686,8 +686,7 @@ def rag_templates_optimization(
             "settings": {
                 "vector_store": {
                     "datasource_type": idx.get("vector_store", {}).get("datasource_type")
-                    or rp.get("vector_store", {}).get("datasource_type")
-                    or "ogx",
+                    or rp.get("vector_store", {}).get("datasource_type"),
                     "collection_name": getattr(evaluation_result, "collection", "") or "",
                 },
                 "chunking": {
