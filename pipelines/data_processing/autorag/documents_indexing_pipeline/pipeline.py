@@ -35,7 +35,7 @@ def documents_indexing_pipeline(
     chunk_overlap: int = 0,
     batch_size: int = 20,
     ocr_lang: Optional[str] = None,
-    kg_extraction_config: Optional[dict] = None,
+    graph_extraction_config: Optional[dict] = None,
 ):
     """Build a production vector index from documents for AutoRAG.
 
@@ -79,7 +79,7 @@ def documents_indexing_pipeline(
             so override it when the corpus is in a different language. Chinese selects
             the Chinese bundle; omitting it selects the English bundle, which covers all
             Latin-script languages.
-        kg_extraction_config: Neo4j graph-extraction settings from an optimized
+        graph_extraction_config: Neo4j graph-extraction settings from an optimized
             pattern. Ignored by other vector stores.
     """
     documents_discovery_task = documents_discovery(
@@ -111,7 +111,7 @@ def documents_indexing_pipeline(
         chunk_overlap=chunk_overlap,
         batch_size=batch_size,
         collection_name=collection_name,
-        kg_extraction_config=kg_extraction_config,
+        graph_extraction_config=graph_extraction_config,
     )
     documents_indexing_task.set_caching_options(False)
     documents_indexing_task.set_cpu_request("2").set_memory_request("8Gi").set_cpu_limit(MAX_CPUS).set_memory_limit(
