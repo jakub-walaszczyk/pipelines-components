@@ -604,9 +604,7 @@ onnxruntime==1.25.0 \
     --hash=sha256:3c9ee87f6024581bf18adb339b41de8d8fa92006d34fdd6124ea832bfb41d4a1 \
     --hash=sha256:64b70369f68de818f618a05c6c76fa045053199541189edcf341babafe1f4fa1 \
     --hash=sha256:d61ca53ad8ec3ba5d3c2e4acf7ee62f611b59003cd4c61da5402b42fc8271b84
-    # via
-    #   -r requirements.in
-    #   ai4rag
+    # via ai4rag
 openai==2.53.0 \
     --hash=sha256:781ee0a067abb323ba473a4d9d872583919b960d6f4fc37e59d6efd9074868b2
     # via
